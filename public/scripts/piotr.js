@@ -10,29 +10,14 @@ class Square extends React.Component {
 }
 
 class Board extends React.Component {
-   
-   constructor() {
-    super();
-    this.state = {
-      squares: Array(9).fill(null),
-    };
-  }
 
   renderSquare(i) {
-    return <Square value={this.state.squares[i]} onClick={() => this.handleClick(i)} />;
+    return <Square value={this.props.squares[i]} onClick={() => this.props.onClick(i)} />;
   }
 
-  handleClick(i){
-    const squares = this.state.squares.slice();
-    squares[i] = 'X';
-    this.setState({squares: squares});
-  }
-
-  render() {
-    const status = 'Next player: X';
+  render() {    
     return (
       <div>
-        <div className="status">{status}</div>
         <div className="board-row">
           {this.renderSquare(0)}
           {this.renderSquare(1)}
@@ -54,15 +39,56 @@ class Board extends React.Component {
 }
 
 class Game extends React.Component {
+
+  constructor() {
+    super();
+    this.state = {
+      squares: Array(9).fill(null),
+      isXNext : true,
+      status: this.resolveStatus()
+    };
+  }
+
+  handleClick(i){
+    if(this.state.squares[i]) return;
+
+    const squares = this.state.squares.slice();
+    squares[i] = this.resolveSign(this.state.isXNext);
+
+    const toggled = !this.state.isXNext;
+
+    this.setState({
+      squares: squares,
+      isXNext: toggled,
+      status: this.resolveStatus(toggled)
+    });    
+  }
+
+  resolveStatus(next){ 
+    if(typeof this.state === 'undefined') return 'Next player: X';
+    var winner = calculateWinner(this.state.squares);
+    if(winner){
+      return 'AND THE WINNER IS ' + winner;
+    }
+    return 'Next player: ' + this.resolveSign(next)
+  }
+
+  resolveSign(next){
+    return next ? 'X' : 'O';    
+  }
+
   render() {
     return (
       <div className="game">
+
         <div className="game-board">
-          <Board />
+          <Board squares={this.state.squares} onClick={ (i) => this.handleClick(i)} />
         </div>
         <div className="game-info">
-          <div>{/* status */}</div>
-          <ol>{/* TODO */}</ol>
+          <div>{this.state.status }</div>
+          <ol>
+            
+          </ol>
         </div>
       </div>
     );
