@@ -38,6 +38,18 @@ class Board extends React.Component {
   }
 }
 
+class GameHistory extends React.Component{
+
+  render(){
+    var me = this;
+    return <ol>{
+      this.props.moves.map(function(item, i){
+        return <li key={i}><a href="#" onClick={() => me.props.histItemClicked(i)}> {item.letter} made a move at {item.index}</a></li>
+      })
+    }</ol>
+  }
+}
+
 class Game extends React.Component {
 
   constructor() {
@@ -45,32 +57,65 @@ class Game extends React.Component {
     this.state = {
       squares: Array(9).fill(null),
       isXNext : true,
-      status: this.resolveStatus()
+      status: this.resolveStatus(null),
+      moves : []
     };
+    this.gameOver = false;
   }
 
   handleClick(i){
-    if(this.state.squares[i]) return;
+    if(this.state.squares[i] || this.gameOver) return;
 
     const squares = this.state.squares.slice();
     squares[i] = this.resolveSign(this.state.isXNext);
 
+    let move = {
+      letter: this.resolveSign(this.state.isXNext),
+      index: i,
+      squares: squares.slice()
+    };
+    const moves = this.state.moves.slice();
+    moves.push(move);
+
     const toggled = !this.state.isXNext;
 
     this.setState({
-      squares: squares,
-      isXNext: toggled,
-      status: this.resolveStatus(toggled)
+      squares: squares.slice(),
+      isXNext: this.isXNextResolve(move),
+      status: this.resolveStatus(move),
+      moves: moves
     });    
   }
 
-  resolveStatus(next){ 
-    if(typeof this.state === 'undefined') return 'Next player: X';
-    var winner = calculateWinner(this.state.squares);
+  handleHistoryMove(i){
+    this.state.moves.splice(i+1);
+    const moves = this.state.moves.slice();
+    
+    let currentMove = this.state.moves[i];
+    const squares = currentMove.squares.slice();
+
+    this.setState({
+      squares : squares,
+      moves: moves,
+      status: this.resolveStatus(currentMove),
+      isXNext: this.isXNextResolve(currentMove)
+    });
+    this.gameOver = false;
+  }
+
+  isXNextResolve(lastMove){
+    if(lastMove == null) return true;
+    return lastMove.letter != 'X';
+  }
+
+  resolveStatus(lastMove){ 
+    if(lastMove == null) return 'Next player: X';
+    var winner = calculateWinner(lastMove.squares);
     if(winner){
-      return 'AND THE WINNER IS ' + winner;
+      this.gameOver = true;
+      return 'AND THE WINNER IS ' + winner + " GAME OVER.";
     }
-    return 'Next player: ' + this.resolveSign(next)
+    return 'Next player: ' + this.resolveSign(this.isXNextResolve(lastMove));
   }
 
   resolveSign(next){
@@ -86,9 +131,7 @@ class Game extends React.Component {
         </div>
         <div className="game-info">
           <div>{this.state.status }</div>
-          <ol>
-            
-          </ol>
+          <GameHistory moves={this.state.moves} histItemClicked={(i) => this.handleHistoryMove(i)} />
         </div>
       </div>
     );
